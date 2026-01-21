@@ -1,14 +1,18 @@
-import { useEffect } from "react";
-import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { auth } from "./services/firebase";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
 
-export default function App() {
+function App() {
+  const [uid, setUid] = useState<string | null>(null);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      console.log("AUTH STATE:", user ? user.uid : "no user");
-
-      if (!user) {
-        signInAnonymously(auth).catch(console.error);
+      if (user) {
+        console.log("AUTH STATE:", user.uid);
+        setUid(user.uid);
+      } else {
+        console.log("AUTH STATE: no user");
+        setUid(null);
       }
     });
 
@@ -16,9 +20,21 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: "40px" }}>
       <h1>My Diary App</h1>
+
       <p>Auth check console 확인</p>
+
+      {uid ? (
+        <p>
+          현재 UID: <strong>{uid}</strong>
+        </p>
+      ) : (
+        <p>로그인된 사용자 없음</p>
+      )}
     </div>
   );
 }
+
+export default App;
+
