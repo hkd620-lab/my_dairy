@@ -1,104 +1,90 @@
-import { db, auth } from './firebase'
-import { ensureSignedIn } from './auth'
+import { db } from "./firebase";
 import {
   collection,
-  deleteDoc,
   doc,
-  getDoc,
   getDocs,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
   setDoc,
+  deleteDoc,
   updateDoc,
-  type Timestamp
-} from 'firebase/firestore'
+  query,
+  orderBy,
+  limit,
+  serverTimestamp,
+} from "firebase/firestore";
 
-export type DiaryEntry = {
-  id: string
-  dateKey: string // YYYY-MM-DD
-  title: string
-  content: string
-  createdAt?: Timestamp
-  updatedAt?: Timestamp
+/**
+ * App.tsx (5718867) 기준 엔트리 타입
+ */
+export interface DiaryEntry {
+  id: string;
+  dateKey: string;   // YYYY-MM-DD
+  title?: string;
+  content?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
-function getUidOrThrow(): string {
-  const uid = auth.currentUser?.uid
-  if (!uid) throw new Error('[diary] auth.currentUser is null. Did you sign in?')
-  return uid
-}
-
-export async function ensureUserDoc(): Promise<string> {
-  const user = await ensureSignedIn()
-  const uid = user.uid
-
-  // users/{uid} 문서가 없으면 생성 (규칙에서 본인만 쓰기 가능)
-  const userRef = doc(db, 'users', uid)
-  const snap = await getDoc(userRef)
-  if (!snap.exists()) {
-    await setDoc(userRef, { uid, createdAt: serverTimestamp() })
-  }
-  return uid
-}
-
+/**
+ * 새 ID 생성
+ */
 export function newDiaryId(): string {
-  // 브라우저 환경에선 randomUUID 가능
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const c: any = globalThis.crypto
-  if (c?.randomUUID) return c.randomUUID()
-  return `d-${Date.now()}`
+  return crypto.randomUUID();
 }
 
-export async function listDiaries(max = 50): Promise<DiaryEntry[]> {
-  await ensureUserDoc()
-  const uid = getUidOrThrow()
+/**
+ * 일기 생성
+ */
+export async function createDiary(entry: DiaryEntry): Promise<void> {
+  const uid = "demo"; // ⚠️ 지금은 고정 (다음 단계에서 auth.uid로 교체)
 
-  const col = collection(db, 'users', uid, 'diaries')
-  const q = query(col, orderBy('dateKey', 'desc'), limit(max))
-  const snap = await getDocs(q)
-
-  return snap.docs.map((d) => {
-    const data = d.data() as any
-    return {
-      id: d.id,
-      dateKey: String(data.dateKey || ''),
-      title: String(data.title || ''),
-      content: String(data.content || ''),
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt
-    }
-  })
-}
-
-export async function createDiary(entry: Omit<DiaryEntry, 'createdAt' | 'updatedAt'>): Promise<void> {
-  await ensureUserDoc()
-  const uid = getUidOrThrow()
-
-  const ref = doc(db, 'users', uid, 'diaries', entry.id)
+  const ref = doc(db, "users", uid, "diaries", entry.id);
   await setDoc(ref, {
     ...entry,
     createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  })
+    updatedAt: serverTimestamp(),
+  });
 }
 
-export async function updateDiary(entry: Omit<DiaryEntry, 'createdAt' | 'updatedAt'>): Promise<void> {
-  await ensureUserDoc()
-  const uid = getUidOrThrow()
+/**
+ * 일기 목록 조회
+ */
+export async function listDiaries(max: number): Promise<DiaryEntry[]> {
+  const uid = "demo"; // ⚠️ 지금은 고정
 
-  const ref = doc(db, 'users', uid, 'diaries', entry.id)
+  const q = query(
+    collection(db, "users", uid, "diaries"),
+    orderBy("dateKey", "desc"),
+    limit(max)
+  );
+
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as any),
+  }));
+}
+
+/**
+ * 일기 수정
+ */
+export async function updateDiary(
+  id: string,
+  patch: Partial<DiaryEntry>
+): Promise<void> {
+  const uid = "demo";
+  const ref = doc(db, "users", uid, "diaries", id);
   await updateDoc(ref, {
-    ...entry,
-    updatedAt: serverTimestamp()
-  })
+    ...patch,
+    updatedAt: serverTimestamp(),
+  });
 }
 
+/**
+ * 일기 삭제
+ */
 export async function removeDiary(id: string): Promise<void> {
-  await ensureUserDoc()
-  const uid = getUidOrThrow()
-
-  const ref = doc(db, 'users', uid, 'diaries', id)
-  await deleteDoc(ref)
+  const uid = "demo";
+  const ref = doc(db, "users", uid, "diaries", id);
+  await deleteDoc(ref);
 }
+
