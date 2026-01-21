@@ -29,3 +29,9 @@ notes/firebaseConfig.console.json
 
 # Local scratch
 cd
+
+# Firebase local tests
+tools/firebase_test/
+
+# Firebase local tests
+tools/firebase_test/
