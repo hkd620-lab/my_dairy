@@ -35,3 +35,6 @@ tools/firebase_test/
 
 # Firebase local tests
 tools/firebase_test/
+
+# Daily dev logs
+DEVLOG/
