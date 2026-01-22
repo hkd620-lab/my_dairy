@@ -1,41 +1,10 @@
-import { auth } from './firebase';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import type { User } from 'firebase/auth';
+import { getAuth, signInAnonymously } from "firebase/auth";
+import { app } from "./firebase";
 
-const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+export const auth = getAuth(app);
 
-export function ensureSignedIn(timeoutMs = 12000): Promise<User> {
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+// 앱 시작 시 자동 익명 로그인 (에러 나도 앱은 유지)
+signInAnonymously(auth).catch((error) => {
+  console.warn("익명 로그인 실패:", error.code);
+});
 
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`[auth] timeout after ${timeoutMs}ms`)), timeoutMs);
-
-    const unsub = onAuthStateChanged(
-      auth,
-      async (user) => {
-        try {
-          if (user) {
-            clearTimeout(timer);
-            unsub();
-            resolve(user);
-            return;
-          }
-          const res = await signInAnonymously(auth);
-          clearTimeout(timer);
-          unsub();
-          resolve(res.user);
-        } catch (e: any) {
-          clearTimeout(timer);
-          unsub();
-          console.error('[auth] signInAnonymously failed', { code: e?.code, e });
-          reject(new Error(`[auth] ${e?.code || 'unknown'} ${msg(e)}`));
-        }
-      },
-      (e) => {
-        clearTimeout(timer);
-        unsub();
-        reject(new Error(`[auth] onAuthStateChanged error: ${msg(e)}`));
-      }
-    );
-  });
-}
