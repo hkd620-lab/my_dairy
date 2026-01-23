@@ -45,4 +45,10 @@ cache/
 # =========================
 # DEVLOG
 # DEVLOG/
+# =========================
+# Sensitive / Local only
+# =========================
+notes/firebaseConfig*.json
+tools/firebase_test/
+cd
 
