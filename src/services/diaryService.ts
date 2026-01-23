@@ -2,58 +2,50 @@ import {
   collection,
   addDoc,
   getDocs,
-  query,
-  where,
   orderBy,
-  deleteDoc,
-  doc,
+  query,
+  serverTimestamp,
 } from "firebase/firestore";
-import { db } from "./firebase";
-import { auth } from "./auth";
+import { db } from "../firebase";
+
+/**
+ * 일기 데이터 타입
+ */
+export type Diary = {
+  id: string;
+  content: string;
+  createdAt: number;
+};
 
 /**
  * 일기 저장
  */
-export const saveDiary = async (content: string) => {
-  if (!auth.currentUser) {
-    throw new Error("Not authenticated");
-  }
-
+export async function saveDiary(content: string) {
   await addDoc(collection(db, "diaries"), {
-    uid: auth.currentUser.uid,
     content,
-    createdAt: new Date(),
+    createdAt: serverTimestamp(),
   });
-};
+}
 
 /**
- * 내 일기 목록 조회 (최신순)
+ * 일기 목록 조회
  */
-export const getDiaries = async () => {
-  if (!auth.currentUser) return [];
-
+export async function getDiaries(): Promise<Diary[]> {
   const q = query(
     collection(db, "diaries"),
-    where("uid", "==", auth.currentUser.uid),
     orderBy("createdAt", "desc")
   );
 
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  }));
-};
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
 
-/**
- * 일기 삭제
- */
-export const deleteDiary = async (id: string) => {
-  if (!auth.currentUser) {
-    throw new Error("Not authenticated");
-  }
-
-  await deleteDoc(doc(db, "diaries", id));
-};
+    return {
+      id: doc.id,
+      content: data.content ?? "",
+      createdAt: data.createdAt?.toMillis?.() ?? Date.now(),
+    };
+  });
+}
 
