@@ -1,40 +1,48 @@
-# Logs
-logs
-*.log
+# =========================
+# Node / Vite / React
+# =========================
+node_modules/
+dist/
+.vite/
+.env
+.env.local
+.env.*.local
+
+# =========================
+# Firebase
+# =========================
+.firebase/
+.firebase-cache/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Logs (generic)
+# =========================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# =========================
+# Temporary / Cache
+# =========================
+.tmp/
+temp/
+cache/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# =========================
+# ❌ DEVLOG는 이제 기록 대상
+# =========================
+# DEVLOG
+# DEVLOG/
 
-# Firebase secrets
-notes/firebaseConfig.code.json
-notes/firebaseConfig.console.json
-
-# Local scratch
-cd
-
-# Firebase local tests
-tools/firebase_test/
-
-# Firebase local tests
-tools/firebase_test/
-
-# Daily dev logs
-DEVLOG/
