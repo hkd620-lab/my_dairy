@@ -1,81 +1,67 @@
-import { useEffect, useRef, useState } from "react";
-import { saveDiary, getDiaries } from "./services/diaryService";
-import AccountSection from "./components/AccountSection";
+import { useEffect, useState } from "react";
+import "./App.css";
 
-/**
- * 메인 App 컴포넌트
- */
-export default function App() {
-  const [content, setContent] = useState("");
-  const [diaries, setDiaries] = useState<any[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+function App() {
+  // 25분(1500초) 포커스 타이머 기본값
+  const [secondsLeft, setSecondsLeft] = useState(25 * 60);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const listTopRef = useRef<HTMLDivElement | null>(null);
-
-  /** 일기 목록 로드 */
-  const loadDiaries = async () => {
-    const data = await getDiaries();
-    setDiaries(data);
-  };
-
+  // 타이머 동작 로직
   useEffect(() => {
-    loadDiaries();
-  }, []);
+    if (!isRunning) return;
 
-  /** 저장 */
-  const onSave = async () => {
-    if (!content.trim() || isSaving) return;
-
-    try {
-      setIsSaving(true);
-      await saveDiary(content);
-      setContent("");
-      await loadDiaries();
-
-      // 저장 후 리스트 상단으로 이동
-      setTimeout(() => {
-        listTopRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } finally {
-      setIsSaving(false);
+    if (secondsLeft <= 0) {
+      setIsRunning(false);
+      return;
     }
+
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isRunning, secondsLeft]);
+
+  // mm:ss 형식 변환
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+
+  const resetTimer = () => {
+    setIsRunning(false);
+    setSecondsLeft(25 * 60);
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-      <h2>My Diary</h2>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <h1>Focus Timer</h1>
 
-      {/* 계정 관리 섹션 (추가된 부분) */}
-      <AccountSection />
-
-      {/* 입력 영역 */}
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={5}
-        style={{ width: "100%", marginTop: 12 }}
-        placeholder="오늘의 기록을 남겨보세요."
-      />
-
-      <button
-        onClick={onSave}
-        disabled={isSaving}
-        style={{ marginTop: 8 }}
+      <div
+        style={{
+          fontSize: "4rem",
+          margin: "20px 0",
+          letterSpacing: "2px",
+        }}
       >
-        {isSaving ? "저장 중..." : "저장"}
-      </button>
+        {minutes}:{seconds.toString().padStart(2, "0")}
+      </div>
 
-      <div ref={listTopRef} style={{ marginTop: 24 }} />
-
-      {/* 일기 목록 */}
-      <ul>
-        {diaries.map((d, i) => (
-          <li key={i} style={{ marginBottom: 8 }}>
-            {d.content}
-          </li>
-        ))}
-      </ul>
+      <div style={{ display: "flex", gap: "12px" }}>
+        <button onClick={() => setIsRunning(true)}>Start</button>
+        <button onClick={() => setIsRunning(false)}>Pause</button>
+        <button onClick={resetTimer}>Reset</button>
+      </div>
     </div>
   );
 }
+
+export default App;
 

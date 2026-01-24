@@ -1,21 +1,16 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-// 🔐 Firebase 설정 (기존 값 그대로 유지)
 const firebaseConfig = {
-  apiKey: "기존값",
-  authDomain: "기존값",
-  projectId: "기존값",
-  storageBucket: "기존값",
-  messagingSenderId: "기존값",
-  appId: "기존값",
+  apiKey: "여기에_본인_APIKEY",
+  authDomain: "여기에_본인_authDomain",
+  projectId: "여기에_본인_projectId",
+  storageBucket: "여기에_본인_storageBucket",
+  messagingSenderId: "여기에_본인_messagingSenderId",
+  appId: "여기에_본인_appId",
 };
 
-// ✅ 중복 초기화 방지
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-// ✅ export
-export const auth = getAuth(app);
+export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-
+export const auth = getAuth(app);
