@@ -1,19 +1,26 @@
-import { useEffect, useRef, useState } from "react";
-import { addDiary, getMyDiaries, Diary } from "./services/diaryService";
-import { auth } from "./firebase";
+import { useEffect, useState } from "react";
+import { saveDiary, getDiaries, DiaryEntry } from "./services/diaryService";
+
+function todayString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 function App() {
-  const [content, setContent] = useState("");
-  const [diaries, setDiaries] = useState<Diary[]>([]);
+  const [date, setDate] = useState(todayString());
+  const [mood, setMood] = useState("normal");
+  const [weather, setWeather] = useState("fine");
+  const [gratitude, setGratitude] = useState("");
+  const [regret, setRegret] = useState("");
+  const [diaries, setDiaries] = useState<DiaryEntry[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  const listTopRef = useRef<HTMLDivElement | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const load = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const data = await getMyDiaries(user.uid);
+    const data = await getDiaries();
     setDiaries(data);
   };
 
@@ -22,57 +29,99 @@ function App() {
   }, []);
 
   const onSave = async () => {
-    if (!content.trim() || isSaving) return;
+  if (isSaving) return;
 
-    const user = auth.currentUser;
-    if (!user) {
-      alert("로그인이 필요합니다");
-      return;
-    }
+  try {
+    setIsSaving(true);
 
-    try {
-      setIsSaving(true);
-      await addDiary({ uid: user.uid, content });
-      setContent("");
-      await load();
+    // ✅ 날짜 정규화 (핵심)
+    const safeDate =
+      typeof date === "string" && date.includes("-")
+        ? date
+        : todayString();
 
-      setTimeout(() => {
-        listTopRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    await saveDiary(safeDate, {
+      mood,
+      weather,
+      gratitude,
+      regret,
+    });
+
+    setLastSavedAt(new Date());
+    await load();
+  } catch (e) {
+    alert("저장 실패");
+    console.error(e);
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   return (
     <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-      <h2>My Diary</h2>
+      <h2>나의 일기</h2>
 
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={4}
-        placeholder="오늘의 생각을 적어보세요"
-        style={{ width: "100%", padding: 8 }}
-        disabled={isSaving}
-      />
+      <div>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
 
-      <button onClick={onSave} disabled={isSaving} style={{ marginTop: 10 }}>
+      <div>
+        기분:
+        <select value={mood} onChange={(e) => setMood(e.target.value)}>
+          <option value="very good">아주 좋음</option>
+          <option value="good">좋음</option>
+          <option value="normal">보통</option>
+          <option value="bad">나쁨</option>
+          <option value="very bad">아주 나쁨</option>
+        </select>
+      </div>
+
+      <div>
+        날씨:
+        <select value={weather} onChange={(e) => setWeather(e.target.value)}>
+          <option value="fine">맑음</option>
+          <option value="cloudy">흐림</option>
+          <option value="rain">비</option>
+        </select>
+      </div>
+
+      <div>
+        감사한 일
+        <textarea
+          value={gratitude}
+          onChange={(e) => setGratitude(e.target.value)}
+        />
+      </div>
+
+      <div>
+        아쉬운 일
+        <textarea
+          value={regret}
+          onChange={(e) => setRegret(e.target.value)}
+        />
+      </div>
+
+      <button onClick={onSave} disabled={isSaving}>
         {isSaving ? "저장 중..." : "저장"}
       </button>
 
-      <div ref={listTopRef} style={{ marginTop: 30 }} />
+      {lastSavedAt && (
+        <div style={{ marginTop: 10 }}>
+          마지막 저장: {lastSavedAt.toLocaleString()}
+        </div>
+      )}
 
+      <hr />
+
+      <h3>과거 기록</h3>
       {diaries.map((d) => (
-        <div
-          key={d.id}
-          style={{
-            borderBottom: "1px solid #ddd",
-            padding: "8px 0",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {d.content}
+        <div key={d.id} style={{ marginBottom: 10 }}>
+          <strong>{d.date}</strong> / {d.mood.value} / {d.weather.type}
         </div>
       ))}
     </div>
@@ -80,4 +129,3 @@ function App() {
 }
 
 export default App;
-
